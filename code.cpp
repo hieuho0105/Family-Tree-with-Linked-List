@@ -1,39 +1,47 @@
 #include <iostream>
 #include <string>
+#include <sstream>
+using namespace std;
 
 struct Person;
-struct DNode;
-struct DList;
+struct Node;
+struct List;
 struct FamilyTree;
 
-void initDList(DList* list);
+void initList(List* list);
 void initFamilyTree(FamilyTree* familyTree);
-Person* createPerson(const std::string& name, const std::string& birth);
+
+Person* createPerson();
+
 void addPersonToFamilyTree(FamilyTree* familyTree, Person* person);
-void addPersonToDList(DList* list, Person* person);
-void addCon(Person* parent, Person* child);
-Person* findPerson(FamilyTree* familyTree, const std::string& name);
+void addPersonToList(List* list, Person* person);
+void addChildren(Person* parent, Person* child);
+
+Person* findPerson(const FamilyTree* familyTree, const string& name);
+
 void printPersonInfo(const Person* person);
 void printPersonWithChildren(const Person* person);
-void deleteDList(DList* list);
+void printFamily(const Person* person, int generation);
+
+void deleteList(List* list);
 void deletePerson(Person* person);
 void deleteFamilyTree(FamilyTree* familyTree);
 
-typedef struct DNode {
+typedef struct Node {
     Person* person;
-    DNode* next;
-} DNode;
+    Node* next;
+} Node;
 
-typedef struct DList {
-    DNode* first;
-    DNode* last;
-} DList;
+typedef struct List {
+    Node* first;
+    Node* last;
+} List;
 
 typedef struct Person {
-    std::string name;
-    std::string birth;
+    string name;
+    string birth;
     Person* father;
-    DList children;
+    List children;
     Person* next;
 } Person;
 
@@ -42,28 +50,106 @@ typedef struct FamilyTree {
     Person* last;
 } FamilyTree;
 
-void initDList(DList* list) {
-    list->first = nullptr;
-    list->last = nullptr;
+int main() {
+    FamilyTree familyTree;
+    initFamilyTree(&familyTree);
+
+    int choice;
+    string name;
+
+    do {
+        cout << "1. Them thanh vien moi vao pha he" << endl;
+        cout << "2. Them con vao 1 thanh vien da co trong pha he" << endl;
+        cout << "3. Tim va hien thi thong tin cua cha va con trong pha he" << endl;
+        cout << "4. Hien thi toan bo pha he" << endl;
+        cout << "5. Thoat" << endl;
+        cout << "Nhap lua chon cua ban: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1: {
+                cin.ignore(); // Clear the input buffer
+                Person* newPerson = createPerson();
+                addPersonToFamilyTree(&familyTree, newPerson);
+                cout << "Them thanh cong!" << endl;
+                break;
+            }
+            case 2: {
+                cin.ignore(); // Clear the input buffer
+                cout << "Nhap ten cha: ";
+                getline(cin, name);
+                Person* parent = findPerson(&familyTree, name);
+                if (parent == NULL) {
+                    cout << "Khong tim thay nguoi cha trong pha he!" << endl;
+                } else {
+                    Person* newChild = createPerson();
+                    addPersonToFamilyTree(&familyTree, newChild);
+                    addChildren(parent, newChild);
+                    cout << "Them thanh cong!" << endl;
+                }
+                break;
+            }
+            case 3: {
+                cin.ignore(); // Clear the input buffer
+                cout << "Nhap then thanh vien can tim: ";
+                getline(cin, name);
+                Person* foundPerson = findPerson(&familyTree, name);
+                if (foundPerson != NULL) {
+                    printPersonWithChildren(foundPerson);
+                } else {
+                    cout << "Khong tim thay thanh vien trong pha he!" << endl;
+                }
+                break;
+            }
+            case 4: {
+                printFamily(familyTree.first, 0);
+                break;
+            }
+            case 5: {
+                cout << "Thoat chuong trinh!" << endl;
+                break;
+            }
+            default:
+                cout << "Lua chon khong hop le, vui long chon lai!" << endl;
+        }
+
+        cout << endl;
+        system("pause");
+        system("cls");
+    } while (choice != 5);
+
+    deleteFamilyTree(&familyTree);
+
+    return 0;
+}
+
+void initList(List* list) {
+    list->first = NULL;
+    list->last = NULL;
 }
 
 void initFamilyTree(FamilyTree* familyTree) {
-    familyTree->first = nullptr;
-    familyTree->last = nullptr;
+    familyTree->first = NULL;
+    familyTree->last = NULL;
 }
 
-Person* createPerson(const std::string& name, const std::string& birth) {
+Person* createPerson() {
+    string name, birth;
+    cout << "Nhap ten: ";
+    getline(cin, name);
+    cout << "Nhap ngay sinh: ";
+    cin >> birth;
     Person* p = new Person;
     p->name = name;
     p->birth = birth;
-    p->father = nullptr;
-    initDList(&(p->children));
-    p->next = nullptr;
+    p->father = NULL;
+    initList(&(p->children));
+    p->next = NULL;
     return p;
 }
 
 void addPersonToFamilyTree(FamilyTree* familyTree, Person* person) {
-    if (familyTree->first == nullptr) {
+    if (familyTree->first == NULL) {
         familyTree->first = person;
         familyTree->last = person;
     } else {
@@ -72,12 +158,12 @@ void addPersonToFamilyTree(FamilyTree* familyTree, Person* person) {
     }
 }
 
-void addPersonToDList(DList* list, Person* person) {
-    DNode* node = new DNode;
+void addPersonToList(List* list, Person* person) {
+    Node* node = new Node;
     node->person = person;
-    node->next = nullptr;
+    node->next = NULL;
 
-    if (list->first == nullptr) {
+    if (list->first == NULL) {
         list->first = node;
         list->last = node;
     } else {
@@ -86,117 +172,87 @@ void addPersonToDList(DList* list, Person* person) {
     }
 }
 
-void addCon(Person* parent, Person* child) {
+void addChildren(Person* parent, Person* child) {
     child->father = parent;
-    addPersonToDList(&(parent->children), child);
+    addPersonToList(&(parent->children), child);
 }
 
-Person* findPerson(FamilyTree* familyTree, const std::string& name) {
+Person* findPerson(const FamilyTree* familyTree, const string& name) {
     Person* person = familyTree->first;
-    while (person != nullptr) {
+    while (person != NULL) {
         if (person->name == name) {
             return person;
         }
         person = person->next;
     }
-    return nullptr;
+    return NULL;
 }
 
 void printPersonInfo(const Person* person) {
-    std::cout << "Name: " << person->name << "\t";
-    std::cout << "Birth: " << person->birth << std::endl;
+    if (person != NULL) {
+        cout << "Name: " << person->name << "\t";
+        cout << "Birth: " << person->birth << endl;
+    } 
 }
 
 void printPersonWithChildren(const Person* person) {
     printPersonInfo(person);
 
-    if (person->children.first != nullptr) {
-        std::cout << "Children: ";
-        DNode* node = person->children.first;
-        while (node != nullptr) {
-            std::cout << node->person->name << " ";
+    if (person->children.first != NULL) {
+        cout << "Children: ";
+        Node* node = person->children.first;
+        while (node != NULL) {
+            cout << node->person->name << " ";
             node = node->next;
         }
-        std::cout << std::endl;
+        cout << endl;
     }
-    std::cout << std::endl;
+    cout << endl;
 }
 
 void printFamily(const Person* person, int generation = 0) {
+
+    if (person == NULL) {
+        return;
+    }
+
     for (int i = 0; i < generation; ++i) {
-        std::cout << "  ";  // Indentation for readability
+        cout << "  ";  // Indentation for readability
     }
 
     printPersonInfo(person);
 
-    DNode* node = person->children.first;
-    while (node != nullptr) {
+    Node* node = person->children.first;
+    while (node != NULL) {
         printFamily(node->person, generation + 1);  // Recursive call for each child
         node = node->next;
     }
 }
 
-void deleteDList(DList* list) {
-    DNode* node = list->first;
-    while (node != nullptr) {
-        DNode* temp = node;
+void deleteList(List* list) {
+    Node* node = list->first;
+    while (node != NULL) {
+        Node* temp = node;
         node = node->next;
         deletePerson(temp->person);
         delete temp;
     }
-    list->first = nullptr;
-    list->last = nullptr;
+    list->first = NULL;
+    list->last = NULL;
 }
 
 void deletePerson(Person* person) {
-    deleteDList(&(person->children));
+    deleteList(&(person->children));
     delete person;
 }
 
 void deleteFamilyTree(FamilyTree* familyTree) {
     Person* person = familyTree->first;
-    while (person != nullptr) {
+    while (person != NULL) {
         Person* temp = person;
         person = person->next;
         deletePerson(temp);
     }
-    familyTree->first = nullptr;
-    familyTree->last = nullptr;
-}
-
-int main() {
-    FamilyTree familyTree;
-    initFamilyTree(&familyTree);
-
-    Person* p1 = createPerson("A", "1/1/2000");
-    addPersonToFamilyTree(&familyTree, p1);
-
-    Person* p2 = createPerson("B", "2/2/2000");
-    addCon(p1, p2);
-
-    Person* p3 = createPerson("C", "3/3/2000");
-    addCon(p1, p3);
-
-    Person* p4 = createPerson("D", "4/4/2000");
-    addCon(p1, p4);
-
-    Person* p5 = createPerson("E", "5/5/2000");
-    addCon(p1, p5);
-
-    Person* p6 = createPerson("F", "6/6/2000");
-    addCon(p2, p6);
-
-    Person* p7 = createPerson("G", "7/7/2000");
-    addCon(p2, p7);
-
-    Person* foundPerson = findPerson(&familyTree, "A");
-    if (foundPerson != nullptr) {
-        printPersonWithChildren(foundPerson);
-    }
-
-    printFamily(p1);
-
-    deleteFamilyTree(&familyTree);
-
-    return 0;
+    familyTree->first = NULL;
+    familyTree->last = NULL;
 }
